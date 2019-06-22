@@ -2,13 +2,37 @@
 <html>
   <head>
     <script> 
-      WebAssembly.instantiateStreaming(fetch("rust_example.gc.wasm"))
-        .then(wasmModule => {
-          console.log(wasmModule.instance.exports.add_one(3))
-          const result = wasmModule.instance.exports.add_one(3);
-          const text = document.createTextNode(result);
-          document.body.appendChild(text);
-        });
+      // WebAssembly.instantiateStreaming(fetch("rust_example.gc.wasm"))
+      //   .then(wasmModule => {
+      //     console.log(wasmModule.instance.exports.add_one())
+      //     const result = wasmModule.instance.exports.add_one();
+      //     const text = document.createTextNode(result);
+      //     document.body.appendChild(text);
+      //   });
+      const start = async() => {
+        const res = await fetch('rust_example.gc.wasm');
+        const buffer = await res.arrayBuffer();
+        const module = await WebAssembly.compile(buffer);
+        const instance = await WebAssembly.instantiate(module);
+
+        // obtain the module memory
+        const linearMemory = instance.exports.memory;
+
+        // create a buffer starting at the reference to the exported string
+        const offset = instance.exports.get_hello();
+        const stringBuffer = new Uint8Array(linearMemory.buffer, offset,
+          instance.exports.get_hello_len());
+
+        // create a string from this buffer
+        let str = '';
+        for (let i=0; i<stringBuffer.length; i++) {
+          str += String.fromCharCode(stringBuffer[i]);
+        }
+        console.log(str)
+        const text = document.createTextNode(str);
+        document.body.appendChild(text);
+      }
+      start();
     </script>
   <head>
   <body></body>
